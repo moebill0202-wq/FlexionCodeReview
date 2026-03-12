@@ -1,0 +1,631 @@
+<?xml version="1.0" encoding="UTF-8"?><unload unload_date="2026-03-12 21:08:53">
+<sys_remote_update_set action="INSERT_OR_UPDATE">
+<application display_value="Global">global</application>
+<application_name>Global</application_name>
+<application_scope>global</application_scope>
+<application_version/>
+<collisions/>
+<commit_date/>
+<deleted/>
+<description>Temperature Validator and Converter Challenge for Flexion Code Review</description>
+<inserted/>
+<name>Temperature_Validator_MB</name>
+<origin_sys_id/>
+<parent display_value=""/>
+<release_date/>
+<remote_base_update_set display_value=""/>
+<remote_parent_id/>
+<remote_sys_id>383bc8dd5363325005b475e0a0490e09</remote_sys_id>
+<state>loaded</state>
+<summary/>
+<sys_class_name>sys_remote_update_set</sys_class_name>
+<sys_created_by>admin</sys_created_by>
+<sys_created_on>2026-03-12 21:08:53</sys_created_on>
+<sys_id>6d70411653a37a5005b475e0a0490e11</sys_id>
+<sys_mod_count>0</sys_mod_count>
+<sys_updated_by>admin</sys_updated_by>
+<sys_updated_on>2026-03-12 21:08:53</sys_updated_on>
+<update_set display_value=""/>
+<update_source display_value=""/>
+<updated/>
+</sys_remote_update_set>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application display_value="Global">global</application>
+<category>customer</category>
+<comments/>
+<name>sys_script_include_5323f45553e7325005b475e0a0490ecb</name>
+<payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;&lt;sys_script_include action="INSERT_OR_UPDATE"&gt;&lt;access&gt;package_private&lt;/access&gt;&lt;active&gt;true&lt;/active&gt;&lt;api_name&gt;global.TemperatureValidator&lt;/api_name&gt;&lt;caller_access/&gt;&lt;client_callable&gt;false&lt;/client_callable&gt;&lt;description/&gt;&lt;mobile_callable&gt;false&lt;/mobile_callable&gt;&lt;name&gt;TemperatureValidator&lt;/name&gt;&lt;sandbox_callable&gt;false&lt;/sandbox_callable&gt;&lt;script&gt;&lt;![CDATA[var TemperatureValidator = Class.create();
+TemperatureValidator.prototype = {
+
+    initialize: function() {},
+
+    validateTemperature: function(value, fromUnit, toUnit, reportedValue) {
+
+        gs.info("TEMP VALIDATOR START");
+        gs.info("TEMP DEBUG input value: " + value);
+        gs.info("TEMP DEBUG input unit: " + fromUnit);
+        gs.info("TEMP DEBUG target unit: " + toUnit);
+        gs.info("TEMP DEBUG reported value: " + reportedValue);
+
+        // Validate numeric inputs
+        if (isNaN(value) || isNaN(reportedValue)) {
+            gs.info("TEMP DEBUG invalid numeric input");
+            return "invalid";
+        }
+
+        // Map units to UCUM codes
+        var fromUCUM = this.getUCUMUnit(fromUnit);
+        var toUCUM = this.getUCUMUnit(toUnit);
+
+        gs.info("TEMP DEBUG mapped fromUCUM: " + fromUCUM);
+        gs.info("TEMP DEBUG mapped toUCUM: " + toUCUM);
+
+        if (!fromUCUM || !toUCUM) {
+            gs.info("TEMP DEBUG unit mapping failed");
+            return "invalid";
+        }
+
+        // Convert temperature using UCUM service
+        var converter = new UCUMConverter();
+        var converted = converter.convertTemperature(Number(value), fromUCUM, toUCUM);
+
+        gs.info("TEMP DEBUG converted value from UCUM: " + converted);
+
+        if (converted === null) {
+            gs.info("TEMP DEBUG conversion returned null");
+            return "invalid";
+        }
+
+        // Determine significant figures
+        var sigFigs = this.getSignificantFigures(value);
+        gs.info("TEMP DEBUG significant figures: " + sigFigs);
+
+        // Round values
+        var roundedConverted = this.roundToSigFigs(Number(converted), sigFigs);
+        var roundedReported = this.roundToSigFigs(Number(reportedValue), sigFigs);
+
+        gs.info("TEMP DEBUG rounded converted: " + roundedConverted);
+        gs.info("TEMP DEBUG rounded reported: " + roundedReported);
+
+        // Compare values
+        if (roundedConverted === roundedReported) {
+            gs.info("TEMP DEBUG result: correct");
+            return "correct";
+        }
+
+        gs.info("TEMP DEBUG result: incorrect");
+        return "incorrect";
+    },
+
+
+    getUCUMUnit: function(unit) {
+
+        if (!unit)
+            return null;
+
+        var normalized = String(unit).trim().toLowerCase();
+
+        var units = {
+            "fahrenheit": "%5BdegF%5D",
+            "celsius": "Cel",
+            "kelvin": "K",
+            "rankine": "%5BdegR%5D",
+            "rankin": "%5BdegR%5D"
+        };
+
+        return units[normalized] || null;
+    },
+
+
+    getSignificantFigures: function(value) {
+
+        var str = String(value).trim();
+        var hasDecimal = str.indexOf(".") !== -1;
+
+        // Remove leading zeros (but keep "0.xxx")
+        while (str.length &gt; 1 &amp;&amp; str.charAt(0) === "0" &amp;&amp; str.charAt(1) !== ".") {
+            str = str.substring(1);
+        }
+
+        // Remove decimal for counting
+        str = str.split(".").join("");
+
+        // Strip trailing zeros ONLY if integer
+        if (!hasDecimal) {
+            while (str.length &gt; 1 &amp;&amp; str.endsWith("0")) {
+                str = str.substring(0, str.length - 1);
+            }
+        }
+
+        // Remove remaining leading zeros
+        while (str.length &gt; 1 &amp;&amp; str.charAt(0) === "0") {
+            str = str.substring(1);
+        }
+
+        return str.length;
+    },
+
+
+    roundToSigFigs: function(num, sigFigs) {
+
+        var n = Number(num);
+
+        if (n === 0)
+            return 0;
+
+        var multiplier = Math.pow(
+            10,
+            sigFigs - Math.floor(Math.log10(Math.abs(n))) - 1
+        );
+
+        return Math.round(n * multiplier) / multiplier;
+    },
+
+
+    type: 'TemperatureValidator'
+};]]&gt;&lt;/script&gt;&lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;&lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;&lt;sys_created_on&gt;2026-03-09 17:38:11&lt;/sys_created_on&gt;&lt;sys_id&gt;5323f45553e7325005b475e0a0490ecb&lt;/sys_id&gt;&lt;sys_mod_count&gt;9&lt;/sys_mod_count&gt;&lt;sys_name&gt;TemperatureValidator&lt;/sys_name&gt;&lt;sys_package display_value="Global" source="global"&gt;global&lt;/sys_package&gt;&lt;sys_policy/&gt;&lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;&lt;sys_update_name&gt;sys_script_include_5323f45553e7325005b475e0a0490ecb&lt;/sys_update_name&gt;&lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;&lt;sys_updated_on&gt;2026-03-12 18:58:17&lt;/sys_updated_on&gt;&lt;/sys_script_include&gt;&lt;sys_es_latest_script action="INSERT_OR_UPDATE"&gt;&lt;id&gt;5323f45553e7325005b475e0a0490ecb&lt;/id&gt;&lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;&lt;sys_created_on&gt;2026-03-09 17:38:11&lt;/sys_created_on&gt;&lt;sys_id&gt;c273385553e7325005b475e0a0490e53&lt;/sys_id&gt;&lt;sys_mod_count&gt;0&lt;/sys_mod_count&gt;&lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;&lt;sys_updated_on&gt;2026-03-09 17:38:11&lt;/sys_updated_on&gt;&lt;table&gt;sys_script_include&lt;/table&gt;&lt;use_es_latest&gt;true&lt;/use_es_latest&gt;&lt;/sys_es_latest_script&gt;&lt;/record_update&gt;</payload>
+<payload_hash>-1980113972</payload_hash>
+<remote_update_set display_value="Temperature_Validator_MB">6d70411653a37a5005b475e0a0490e11</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<sys_created_by>admin</sys_created_by>
+<sys_created_on>2026-03-12 21:08:53</sys_created_on>
+<sys_id>2970411653a37a5005b475e0a0490e12</sys_id>
+<sys_mod_count>0</sys_mod_count>
+<sys_recorded_at>19ce369f1b00000001</sys_recorded_at>
+<sys_updated_by>admin</sys_updated_by>
+<sys_updated_on>2026-03-12 21:08:53</sys_updated_on>
+<table/>
+<target_name>TemperatureValidator</target_name>
+<type>Script Include</type>
+<update_domain>global</update_domain>
+<update_guid>6c92ecd24baf3a500d6d5056b5b15d99</update_guid>
+<update_guid_history>6c92ecd24baf3a500d6d5056b5b15d99:-1980113972,8fb1e09288af3a5028ba5ebdd6cc18ad:691391692,5dd024125caf3a500c85ccdd1d412bd0:-1255321288,1bff9c5e6b6f3a50779ff73a902040b5:783358697,758418562c2f3a503ef6c964bc48a6a5:1234860601,e7c3dcd2612f3a5081c4ceed341d555a:637780902,7cb310d2142f3a5037ca9131fd7eac95:-1190737601,7ff660a1822bb250a8d643ff736b1116:530450816,e397b01102a732500ca4a1cb97299c76:-1753059324,92733855e3e7325035213fa79f042f57:-54002239</update_guid_history>
+<update_set display_value=""/>
+<view/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application display_value="Global">global</application>
+<category>customer</category>
+<comments/>
+<name>sys_security_acl_role_ae2ac99553ab325005b475e0a0490e79</name>
+<payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_security_acl_role"><sys_security_acl_role action="INSERT_OR_UPDATE"><sys_class_name>sys_security_acl_role</sys_class_name><sys_created_by>admin</sys_created_by><sys_created_on>2026-03-09 19:17:20</sys_created_on><sys_id>ae2ac99553ab325005b475e0a0490e79</sys_id><sys_mod_count>0</sys_mod_count><sys_name>TemperatureValidatorAjax.admin</sys_name><sys_package display_value="Global" source="global">global</sys_package><sys_policy/><sys_scope display_value="Global">global</sys_scope><sys_security_acl display_value="TemperatureValidatorAjax">222ac99553ab325005b475e0a0490e3c</sys_security_acl><sys_update_name>sys_security_acl_role_ae2ac99553ab325005b475e0a0490e79</sys_update_name><sys_updated_by>admin</sys_updated_by><sys_updated_on>2026-03-09 19:17:20</sys_updated_on><sys_user_role display_value="admin" name="admin">2831a114c611228501d4ea6c309d626d</sys_user_role></sys_security_acl_role></record_update>]]></payload>
+<payload_hash>-1211558290</payload_hash>
+<remote_update_set display_value="Temperature_Validator_MB">6d70411653a37a5005b475e0a0490e11</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<sys_created_by>admin</sys_created_by>
+<sys_created_on>2026-03-12 21:08:53</sys_created_on>
+<sys_id>2d70411653a37a5005b475e0a0490e13</sys_id>
+<sys_mod_count>0</sys_mod_count>
+<sys_recorded_at>19cd40851a70000001</sys_recorded_at>
+<sys_updated_by>admin</sys_updated_by>
+<sys_updated_on>2026-03-12 21:08:53</sys_updated_on>
+<table>TemperatureValidatorAjax</table>
+<target_name>TemperatureValidatorAjax.admin</target_name>
+<type>Access Roles</type>
+<update_domain>global</update_domain>
+<update_guid>262ac995ecab32507adfcecdacc36f82</update_guid>
+<update_guid_history>262ac995ecab32507adfcecdacc36f82:-1211558290</update_guid_history>
+<update_set display_value=""/>
+<view/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application display_value="Global">global</application>
+<category>customer</category>
+<comments/>
+<name>sys_security_acl_role_e7c885d153ab325005b475e0a0490ecb</name>
+<payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_security_acl_role"><sys_security_acl_role action="INSERT_OR_UPDATE"><sys_class_name>sys_security_acl_role</sys_class_name><sys_created_by>admin</sys_created_by><sys_created_on>2026-03-09 19:11:24</sys_created_on><sys_id>e7c885d153ab325005b475e0a0490ecb</sys_id><sys_mod_count>0</sys_mod_count><sys_name>temperature_validator.admin</sys_name><sys_package display_value="Global" source="global">global</sys_package><sys_policy/><sys_scope display_value="Global">global</sys_scope><sys_security_acl display_value="temperature_validator">6fc885d153ab325005b475e0a0490eb7</sys_security_acl><sys_update_name>sys_security_acl_role_e7c885d153ab325005b475e0a0490ecb</sys_update_name><sys_updated_by>admin</sys_updated_by><sys_updated_on>2026-03-09 19:11:24</sys_updated_on><sys_user_role display_value="admin" name="admin">2831a114c611228501d4ea6c309d626d</sys_user_role></sys_security_acl_role></record_update>]]></payload>
+<payload_hash>-52455667</payload_hash>
+<remote_update_set display_value="Temperature_Validator_MB">6d70411653a37a5005b475e0a0490e11</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<sys_created_by>admin</sys_created_by>
+<sys_created_on>2026-03-12 21:08:53</sys_created_on>
+<sys_id>6170411653a37a5005b475e0a0490e14</sys_id>
+<sys_mod_count>0</sys_mod_count>
+<sys_recorded_at>19cd402e0c60000001</sys_recorded_at>
+<sys_updated_by>admin</sys_updated_by>
+<sys_updated_on>2026-03-12 21:08:53</sys_updated_on>
+<table>temperature_validator</table>
+<target_name>temperature_validator.admin</target_name>
+<type>Access Roles</type>
+<update_domain>global</update_domain>
+<update_guid>e3c885d1feab3250a4b66c4ffb4cd5ee</update_guid>
+<update_guid_history>e3c885d1feab3250a4b66c4ffb4cd5ee:-52455667</update_guid_history>
+<update_set display_value=""/>
+<view/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application display_value="Global">global</application>
+<category>customer</category>
+<comments/>
+<name>sys_script_include_5c79415553ab325005b475e0a0490e0d</name>
+<payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;&lt;sys_script_include action="INSERT_OR_UPDATE"&gt;&lt;access&gt;public&lt;/access&gt;&lt;active&gt;true&lt;/active&gt;&lt;api_name&gt;global.TemperatureValidatorAjax&lt;/api_name&gt;&lt;caller_access/&gt;&lt;client_callable&gt;true&lt;/client_callable&gt;&lt;description/&gt;&lt;mobile_callable&gt;false&lt;/mobile_callable&gt;&lt;name&gt;TemperatureValidatorAjax&lt;/name&gt;&lt;sandbox_callable&gt;false&lt;/sandbox_callable&gt;&lt;script&gt;&lt;![CDATA[var TemperatureValidatorAjax = Class.create();
+TemperatureValidatorAjax.prototype = Object.extendsObject(global.AbstractAjaxProcessor, {
+
+    validate: function() {
+        try {
+            var value = this.getParameter('sysparm_value');
+            var fromUnit = this.getParameter('sysparm_from');
+            var toUnit = this.getParameter('sysparm_to');
+            var reported = this.getParameter('sysparm_reported');
+
+            var validator = new TemperatureValidator();
+
+            var result = validator.validateTemperature(
+                value,
+                fromUnit,
+                toUnit,
+                reported
+            );
+
+            return String(result);
+        } catch (ex) {
+            gs.error('TemperatureValidatorAjax error: ' + ex.message);
+            return 'ERROR: ' + ex.message;
+        }
+    },
+
+    type: 'TemperatureValidatorAjax'
+});]]&gt;&lt;/script&gt;&lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;&lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;&lt;sys_created_on&gt;2026-03-09 19:17:20&lt;/sys_created_on&gt;&lt;sys_id&gt;5c79415553ab325005b475e0a0490e0d&lt;/sys_id&gt;&lt;sys_mod_count&gt;8&lt;/sys_mod_count&gt;&lt;sys_name&gt;TemperatureValidatorAjax&lt;/sys_name&gt;&lt;sys_package display_value="Global" source="global"&gt;global&lt;/sys_package&gt;&lt;sys_policy/&gt;&lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;&lt;sys_update_name&gt;sys_script_include_5c79415553ab325005b475e0a0490e0d&lt;/sys_update_name&gt;&lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;&lt;sys_updated_on&gt;2026-03-10 11:14:02&lt;/sys_updated_on&gt;&lt;/sys_script_include&gt;&lt;sys_es_latest_script action="INSERT_OR_UPDATE"&gt;&lt;id&gt;5c79415553ab325005b475e0a0490e0d&lt;/id&gt;&lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;&lt;sys_created_on&gt;2026-03-09 19:17:19&lt;/sys_created_on&gt;&lt;sys_id&gt;1a2ac19553ab325005b475e0a0490ef8&lt;/sys_id&gt;&lt;sys_mod_count&gt;0&lt;/sys_mod_count&gt;&lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;&lt;sys_updated_on&gt;2026-03-09 19:17:19&lt;/sys_updated_on&gt;&lt;table&gt;sys_script_include&lt;/table&gt;&lt;use_es_latest&gt;true&lt;/use_es_latest&gt;&lt;/sys_es_latest_script&gt;&lt;/record_update&gt;</payload>
+<payload_hash>-1071706195</payload_hash>
+<remote_update_set display_value="Temperature_Validator_MB">6d70411653a37a5005b475e0a0490e11</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<sys_created_by>admin</sys_created_by>
+<sys_created_on>2026-03-12 21:08:53</sys_created_on>
+<sys_id>6d70411653a37a5005b475e0a0490e12</sys_id>
+<sys_mod_count>0</sys_mod_count>
+<sys_recorded_at>19cd77431200000001</sys_recorded_at>
+<sys_updated_by>admin</sys_updated_by>
+<sys_updated_on>2026-03-12 21:08:53</sys_updated_on>
+<table/>
+<target_name>TemperatureValidatorAjax</target_name>
+<type>Script Include</type>
+<update_domain>global</update_domain>
+<update_guid>2825a0adc3e7b250b642525ad901bc3d</update_guid>
+<update_guid_history>2825a0adc3e7b250b642525ad901bc3d:-1071706195,f4d061d5956f3250eb26244bda93d732:-1373782751,90fddd113a6f3250d709508cb334f366:1314767102,c08d1d118d6f3250009ddb88a25e3592:-890516087,1a7bd51deb2f3250117e99fb51bb96aa:-1156310755,1075995d67eb325094024df0e56972b4:-890516087,9bc4115d82eb325016f3b78f52ce8fdd:-1175715494,b664111deceb3250b47c78931e99b113:752877074,ee2ac995f3ab32503849654bded2e991:-1009798241</update_guid_history>
+<update_set display_value=""/>
+<view/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application display_value="Global">global</application>
+<category>customer</category>
+<comments/>
+<name>sys_security_acl_222ac99553ab325005b475e0a0490e3c</name>
+<payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_security_acl"><sys_security_acl action="INSERT_OR_UPDATE"><active>true</active><admin_overrides>true</admin_overrides><advanced>false</advanced><applies_to/><condition/><controlled_by_refs/><decision_type>allow</decision_type><description/><local_or_existing>Existing</local_or_existing><name>TemperatureValidatorAjax</name><operation display_value="execute">execute</operation><script/><security_attribute/><sys_class_name>sys_security_acl</sys_class_name><sys_created_by>admin</sys_created_by><sys_created_on>2026-03-09 19:17:20</sys_created_on><sys_id>222ac99553ab325005b475e0a0490e3c</sys_id><sys_mod_count>0</sys_mod_count><sys_name>TemperatureValidatorAjax</sys_name><sys_package display_value="Global" source="global">global</sys_package><sys_policy/><sys_scope display_value="Global">global</sys_scope><sys_update_name>sys_security_acl_222ac99553ab325005b475e0a0490e3c</sys_update_name><sys_updated_by>admin</sys_updated_by><sys_updated_on>2026-03-09 19:17:20</sys_updated_on><type display_value="client_callable_script_include">client_callable_script_include</type></sys_security_acl></record_update>]]></payload>
+<payload_hash>1491711354</payload_hash>
+<remote_update_set display_value="Temperature_Validator_MB">6d70411653a37a5005b475e0a0490e11</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<sys_created_by>admin</sys_created_by>
+<sys_created_on>2026-03-12 21:08:53</sys_created_on>
+<sys_id>a170411653a37a5005b475e0a0490e13</sys_id>
+<sys_mod_count>0</sys_mod_count>
+<sys_recorded_at>19cd40851670000001</sys_recorded_at>
+<sys_updated_by>admin</sys_updated_by>
+<sys_updated_on>2026-03-12 21:08:53</sys_updated_on>
+<table>TemperatureValidatorAjax</table>
+<target_name>TemperatureValidatorAjax</target_name>
+<type>Access Control</type>
+<update_domain>global</update_domain>
+<update_guid>6e2ac995bdab32500e4932f11dcac577</update_guid>
+<update_guid_history>6e2ac995bdab32500e4932f11dcac577:1491711354</update_guid_history>
+<update_set display_value=""/>
+<view/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application display_value="Global">global</application>
+<category>customer</category>
+<comments/>
+<name>sys_ui_page_a5a7cd1153ab325005b475e0a0490eb9</name>
+<payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_ui_page"&gt;&lt;sys_ui_page action="INSERT_OR_UPDATE"&gt;&lt;category&gt;general&lt;/category&gt;&lt;client_script&gt;&lt;![CDATA[function validateTemperature() {
+
+    var value = document.getElementById("inputValue").value.trim();
+    var fromUnit = document.getElementById("inputUnit").value;
+    var toUnit = document.getElementById("targetUnit").value;
+    var reported = document.getElementById("reportedValue").value.trim();
+    var resultEl = document.getElementById("result");
+
+    // Basic check for empty fields
+    if (!value || !reported) {
+        resultEl.className = "temp-result error";
+        resultEl.textContent = "Please enter both input value and reported reading.";
+        return;
+    }
+
+    var ga = new GlideAjax('TemperatureValidatorAjax');
+
+    ga.addParam('sysparm_name', 'validate');
+    ga.addParam('sysparm_value', value);
+    ga.addParam('sysparm_from', fromUnit);
+    ga.addParam('sysparm_to', toUnit);
+    ga.addParam('sysparm_reported', reported);
+
+    ga.getXMLAnswer(function(answer) {
+
+        var response = String(answer).toLowerCase().trim();
+
+        resultEl.className = "temp-result " + response;
+        resultEl.textContent = response.charAt(0).toUpperCase() + response.slice(1);
+    });
+
+}]]&gt;&lt;/client_script&gt;&lt;description/&gt;&lt;direct&gt;false&lt;/direct&gt;&lt;endpoint/&gt;&lt;html&gt;&lt;![CDATA[&lt;?xml version="1.0" encoding="utf-8" ?&gt;
+&lt;j:jelly trim="false" xmlns:j="jelly:core" xmlns:g="glide"&gt;
+
+&lt;html lang="en"&gt;
+
+&lt;head&gt;
+&lt;meta charset="utf-8"/&gt;
+&lt;title&gt;Temperature Validation&lt;/title&gt;
+
+&lt;style&gt;
+body {
+    margin: 0;
+    padding: 30px 20px;
+    background: #f5f5f5;
+}
+
+.temp-form {
+    max-width: 450px;
+    margin: 20px auto;
+    font-family: SourceSansPro, Arial, sans-serif;
+}
+
+.temp-form h2 {
+    margin-bottom: 16px;
+}
+
+.temp-form table {
+    width: 100%;
+    border-spacing: 0 10px;
+}
+
+.temp-form td.label {
+    width: 140px;
+    font-weight: bold;
+    padding-right: 10px;
+    vertical-align: middle;
+}
+
+.temp-form input[type="text"],
+.temp-form select {
+    width: 100%;
+    padding: 6px 8px;
+    font-size: 14px;
+    border: 1px solid #bbb;
+    border-radius: 3px;
+}
+
+.temp-form input[type="text"]:focus,
+.temp-form select:focus {
+    outline: none;
+    border-color: #4a90d9;
+}
+
+.temp-form .btn-validate {
+    padding: 8px 20px;
+    font-size: 14px;
+    background: #4a90d9;
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.temp-form .btn-validate:hover {
+    background: #3a7bc8;
+}
+
+.temp-result {
+    margin-top: 12px;
+    padding: 8px 12px;
+    font-weight: bold;
+    display: none;
+    border-radius: 3px;
+}
+
+.temp-result.correct {
+    display: block;
+    background: #dff0d8;
+    color: #3c763d;
+    border: 1px solid #d6e9c6;
+}
+
+.temp-result.incorrect {
+    display: block;
+    background: #f2dede;
+    color: #a94442;
+    border: 1px solid #ebccd1;
+}
+
+.temp-result.invalid {
+    display: block;
+    background: #fcf8e3;
+    color: #8a6d3b;
+    border: 1px solid #faebcc;
+}
+
+.temp-result.error {
+    display: block;
+    background: #f2dede;
+    color: #a94442;
+    border: 1px solid #ebccd1;
+}
+&lt;/style&gt;
+
+&lt;/head&gt;
+
+&lt;body&gt;
+
+&lt;div class="temp-form"&gt;
+
+&lt;h2&gt;Temperature Validation&lt;/h2&gt;
+
+&lt;table&gt;
+
+&lt;tr&gt;
+&lt;td class="label"&gt;Input Value:&lt;/td&gt;
+&lt;td&gt;
+&lt;input id="inputValue" type="text" placeholder="e.g. 84.2"/&gt;
+&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td class="label"&gt;Input Unit:&lt;/td&gt;
+&lt;td&gt;
+&lt;select id="inputUnit"&gt;
+&lt;option&gt;Fahrenheit&lt;/option&gt;
+&lt;option&gt;Celsius&lt;/option&gt;
+&lt;option&gt;Kelvin&lt;/option&gt;
+&lt;option&gt;Rankine&lt;/option&gt;
+&lt;/select&gt;
+&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td class="label"&gt;Target Unit:&lt;/td&gt;
+&lt;td&gt;
+&lt;select id="targetUnit"&gt;
+&lt;option&gt;Fahrenheit&lt;/option&gt;
+&lt;option&gt;Celsius&lt;/option&gt;
+&lt;option&gt;Kelvin&lt;/option&gt;
+&lt;option&gt;Rankine&lt;/option&gt;
+&lt;/select&gt;
+&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td class="label"&gt;Reported Reading:&lt;/td&gt;
+&lt;td&gt;
+&lt;input id="reportedValue" type="text" placeholder="e.g. 29.0"/&gt;
+&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td colspan="2"&gt;
+&lt;button class="btn-validate" onclick="validateTemperature()"&gt;Validate&lt;/button&gt;
+&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;/table&gt;
+
+&lt;div class="temp-result" id="result"&gt;&lt;/div&gt;
+
+&lt;/div&gt;
+
+&lt;/body&gt;
+&lt;/html&gt;
+
+&lt;!-- REQUIRED for ServiceNow scripts --&gt;
+&lt;g:requires name="scripts"/&gt;
+
+&lt;/j:jelly&gt;]]&gt;&lt;/html&gt;&lt;name&gt;temperature_validator&lt;/name&gt;&lt;processing_script/&gt;&lt;sys_class_name&gt;sys_ui_page&lt;/sys_class_name&gt;&lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;&lt;sys_created_on&gt;2026-03-09 19:11:23&lt;/sys_created_on&gt;&lt;sys_id&gt;a5a7cd1153ab325005b475e0a0490eb9&lt;/sys_id&gt;&lt;sys_mod_count&gt;29&lt;/sys_mod_count&gt;&lt;sys_name&gt;temperature_validator&lt;/sys_name&gt;&lt;sys_package display_value="Global" source="global"&gt;global&lt;/sys_package&gt;&lt;sys_policy/&gt;&lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;&lt;sys_update_name&gt;sys_ui_page_a5a7cd1153ab325005b475e0a0490eb9&lt;/sys_update_name&gt;&lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;&lt;sys_updated_on&gt;2026-03-12 18:33:48&lt;/sys_updated_on&gt;&lt;/sys_ui_page&gt;&lt;sys_es_latest_script action="INSERT_OR_UPDATE"&gt;&lt;id&gt;a5a7cd1153ab325005b475e0a0490eb9&lt;/id&gt;&lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;&lt;sys_created_on&gt;2026-03-09 19:11:21&lt;/sys_created_on&gt;&lt;sys_id&gt;3ec881d153ab325005b475e0a0490e42&lt;/sys_id&gt;&lt;sys_mod_count&gt;0&lt;/sys_mod_count&gt;&lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;&lt;sys_updated_on&gt;2026-03-09 19:11:21&lt;/sys_updated_on&gt;&lt;table&gt;sys_ui_page&lt;/table&gt;&lt;use_es_latest&gt;true&lt;/use_es_latest&gt;&lt;/sys_es_latest_script&gt;&lt;/record_update&gt;</payload>
+<payload_hash>1165655543</payload_hash>
+<remote_update_set display_value="Temperature_Validator_MB">6d70411653a37a5005b475e0a0490e11</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<sys_created_by>admin</sys_created_by>
+<sys_created_on>2026-03-12 21:08:53</sys_created_on>
+<sys_id>a570411653a37a5005b475e0a0490e14</sys_id>
+<sys_mod_count>0</sys_mod_count>
+<sys_recorded_at>19ce353897e0000001</sys_recorded_at>
+<sys_updated_by>admin</sys_updated_by>
+<sys_updated_on>2026-03-12 21:08:53</sys_updated_on>
+<table/>
+<target_name>temperature_validator</target_name>
+<type>UI Page</type>
+<update_domain>global</update_domain>
+<update_guid>02fc1cd63a6f3a50fd7a7d0110eb24f4</update_guid>
+<update_guid_history>02fc1cd63a6f3a50fd7a7d0110eb24f4:1165655543,d7c7581e2b2f3a507f017298fcd4fb06:1474656734,2ba7541ef52f3a505bd80da5d9945e26:2003658796,898598d6572f3a50e59e8a878559c063:-862865523,1d792ce5f8e7b250abf9308d4ce4427b:831121466,01d2a11dd36f32509a4362b5d9c65e7d:-1613410444,7a22e999466f325063c8e853e7f860b2:-723368097,47022199186f32507941f7a544a05dcf:-1613410444,92b16d59c56f3250e46392f421e619f5:-863316901,88616159816f3250111c90efe3cd085b:1322645137,fd51a119e76f3250e0034f7274e36980:965026706,c2e0a119606f3250285fcaa48529bc2b:1308636256,2860ed95246f3250c2fcb696e147bd77:163582965,7abf5955c66f3250f1a5b5571b7ce279:1308636256,2dae5d51cb6f32504861da373ca9727c:2047793601,9d1d9ddd0f2f3250d6a01871397db034:2029270248,ebcad959812f3250511ac730136eea23:-1297585431,fe3959d5ac2f32508b497e437372a255:-228147479,87b81995882f3250b788f4b1afad3c30:-284045681,2a18d115c72f32504e87793dc093733f:-1730778289,fc6795d1952f3250ae3da77082cf5041:-2116226289,41b65d51f62f32504986c6d5113c3c70:1737378195,6cf399d94feb32507c212cec746a78a8:1658797230,5fe2195993eb3250e666d5c4dc0a5b3e:1365512323,09519d55c5eb325092df17c10905c09b:1698805418,86afc59133eb3250f47cab08647f35bd:2011763244,52fecd11d6eb325012dc9c776dda9c9a:-168585663,b1ec89d9a4ab325031c6f9bf0a8bff4e:1932809611,6bfa051980ab32501dbc4fd91c348d6a:-345061524,efc885d18eab325069e1bdbb4075d8f1:883359396</update_guid_history>
+<update_set display_value=""/>
+<view/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application display_value="Global">global</application>
+<category>customer</category>
+<comments/>
+<name>sys_script_include_46b8e89d5367325005b475e0a0490e28</name>
+<payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;&lt;sys_script_include action="INSERT_OR_UPDATE"&gt;&lt;access&gt;public&lt;/access&gt;&lt;active&gt;true&lt;/active&gt;&lt;api_name&gt;global.UCMConverter&lt;/api_name&gt;&lt;caller_access/&gt;&lt;client_callable&gt;false&lt;/client_callable&gt;&lt;description/&gt;&lt;mobile_callable&gt;false&lt;/mobile_callable&gt;&lt;name&gt;UCMConverter&lt;/name&gt;&lt;sandbox_callable&gt;false&lt;/sandbox_callable&gt;&lt;script&gt;&lt;![CDATA[var UCMConverter = Class.create();
+UCMConverter.prototype = {
+    initialize: function() {},
+
+    convertTemperature: function(value, fromUnit, toUnit) {
+
+        var endpoint = "https://ucum.nlm.nih.gov/ucum-service/v1/ucumtransform/" +
+            value + "/from/" + fromUnit + "/to/" + toUnit;
+
+        try {
+
+            var request = new sn_ws.RESTMessageV2();
+            request.setEndpoint(endpoint);
+            request.setHttpMethod("GET");
+
+            var response = request.execute();
+            var body = response.getBody();
+
+            var xml = new XMLDocument2();
+            xml.parseXML(body);
+
+            var result = xml.getNodeText("//ResultQuantity");
+
+            return result;
+
+        } catch (ex) {
+
+            gs.error("UCUM API Error: " + ex.message);
+            return null;
+
+        }
+    },
+
+    type: 'UCMConverter'
+};]]&gt;&lt;/script&gt;&lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;&lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;&lt;sys_created_on&gt;2026-03-09 16:54:03&lt;/sys_created_on&gt;&lt;sys_id&gt;46b8e89d5367325005b475e0a0490e28&lt;/sys_id&gt;&lt;sys_mod_count&gt;3&lt;/sys_mod_count&gt;&lt;sys_name&gt;UCMConverter&lt;/sys_name&gt;&lt;sys_package display_value="Global" source="global"&gt;global&lt;/sys_package&gt;&lt;sys_policy/&gt;&lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;&lt;sys_update_name&gt;sys_script_include_46b8e89d5367325005b475e0a0490e28&lt;/sys_update_name&gt;&lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;&lt;sys_updated_on&gt;2026-03-09 17:22:54&lt;/sys_updated_on&gt;&lt;/sys_script_include&gt;&lt;sys_es_latest_script action="INSERT_OR_UPDATE"&gt;&lt;id&gt;46b8e89d5367325005b475e0a0490e28&lt;/id&gt;&lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;&lt;sys_created_on&gt;2026-03-09 16:54:02&lt;/sys_created_on&gt;&lt;sys_id&gt;1f59689d5367325005b475e0a0490ecd&lt;/sys_id&gt;&lt;sys_mod_count&gt;0&lt;/sys_mod_count&gt;&lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;&lt;sys_updated_on&gt;2026-03-09 16:54:02&lt;/sys_updated_on&gt;&lt;table&gt;sys_script_include&lt;/table&gt;&lt;use_es_latest&gt;true&lt;/use_es_latest&gt;&lt;/sys_es_latest_script&gt;&lt;/record_update&gt;</payload>
+<payload_hash>1016199894</payload_hash>
+<remote_update_set display_value="Temperature_Validator_MB">6d70411653a37a5005b475e0a0490e11</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<sys_created_by>admin</sys_created_by>
+<sys_created_on>2026-03-12 21:08:53</sys_created_on>
+<sys_id>e170411653a37a5005b475e0a0490e12</sys_id>
+<sys_mod_count>0</sys_mod_count>
+<sys_recorded_at>19cd39f8d190000001</sys_recorded_at>
+<sys_updated_by>admin</sys_updated_by>
+<sys_updated_on>2026-03-12 21:08:53</sys_updated_on>
+<table/>
+<target_name>UCMConverter</target_name>
+<type>Script Include</type>
+<update_domain>global</update_domain>
+<update_guid>1eff289dd0a73250d6ca3cc4eaa1987d</update_guid>
+<update_guid_history>1eff289dd0a73250d6ca3cc4eaa1987d:1016199894,d1bfa01ddfa73250d2789604d91188cf:1157199002,c8f92451eca732502b2cd9b713788de1:-950864592,2759689d1a6732502c451f92afaeebd4:-818415951</update_guid_history>
+<update_set display_value=""/>
+<view/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application display_value="Global">global</application>
+<category>customer</category>
+<comments/>
+<name>sys_security_acl_6fc885d153ab325005b475e0a0490eb7</name>
+<payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_security_acl"><sys_security_acl action="INSERT_OR_UPDATE"><active>true</active><admin_overrides>true</admin_overrides><advanced>false</advanced><applies_to/><condition/><controlled_by_refs/><decision_type>allow</decision_type><description/><local_or_existing>Existing</local_or_existing><name>temperature_validator</name><operation display_value="read">read</operation><script/><security_attribute/><sys_class_name>sys_security_acl</sys_class_name><sys_created_by>admin</sys_created_by><sys_created_on>2026-03-09 19:11:23</sys_created_on><sys_id>6fc885d153ab325005b475e0a0490eb7</sys_id><sys_mod_count>0</sys_mod_count><sys_name>temperature_validator</sys_name><sys_package display_value="Global" source="global">global</sys_package><sys_policy/><sys_scope display_value="Global">global</sys_scope><sys_update_name>sys_security_acl_6fc885d153ab325005b475e0a0490eb7</sys_update_name><sys_updated_by>admin</sys_updated_by><sys_updated_on>2026-03-09 19:11:23</sys_updated_on><type display_value="ui_page">ui_page</type></sys_security_acl></record_update>]]></payload>
+<payload_hash>300987398</payload_hash>
+<remote_update_set display_value="Temperature_Validator_MB">6d70411653a37a5005b475e0a0490e11</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<sys_created_by>admin</sys_created_by>
+<sys_created_on>2026-03-12 21:08:53</sys_created_on>
+<sys_id>e570411653a37a5005b475e0a0490e13</sys_id>
+<sys_mod_count>0</sys_mod_count>
+<sys_recorded_at>19cd402dfee0000001</sys_recorded_at>
+<sys_updated_by>admin</sys_updated_by>
+<sys_updated_on>2026-03-12 21:08:53</sys_updated_on>
+<table>temperature_validator</table>
+<target_name>temperature_validator</target_name>
+<type>Access Control</type>
+<update_domain>global</update_domain>
+<update_guid>27c885d103ab3250443c386e30ead1c9</update_guid>
+<update_guid_history>27c885d103ab3250443c386e30ead1c9:300987398</update_guid_history>
+<update_set display_value=""/>
+<view/>
+</sys_update_xml>
+</unload>
