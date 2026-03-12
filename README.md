@@ -42,3 +42,14 @@ Incorrect — the reported reading does not match.
 Invalid — the input value or reported reading is not a number, or the unit is not recognized.
 
 **Prioritized Next Steps**
+
+1) Add stronger client-side validation
+Right now most validation happens on the server. I would add additional checks in the UI so invalid inputs (such as non-numeric values or empty fields) are caught before sending the request. This would give the user faster feedback and reduce unnecessary server calls.
+2) Use explicit values for the unit dropdowns
+The current dropdown relies on the display text for unit values. A better approach would be to define explicit value attributes for each option and map those values directly in the backend. This avoids potential issues caused by formatting differences or capitalization between the UI and server logic
+3) Improve handling of external API failures
+If the UCUM conversion service fails, the system currently just returns invalid. A better approach would be to detect when the external service fails and return a clearer message. I would also add better logging so these issues are easier to troubleshoot
+4) Add a Conversion Preview Feature
+Currently the page only tells the user whether the reported value is correct, incorrect, or invalid. An improvement would be to also display the actual converted temperature returned by the UCUM API
+5) Validate that the entered values fall within reasonable temperature ranges before performing the conversion.
+This can prevent large values being entered, can provide a warning that its falling outside of specific scientific ranges, gives feedback when the input is realistic.
